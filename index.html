@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>DG Helper</title>
+
+  <link rel="stylesheet" href="https://runeapps.org/nis/nis.css">
+  <script src="https://www.unpkg.com/alt1/dist/base/index.js"></script>
+  <script src="https://www.unpkg.com/alt1/dist/ocr/index.js"></script>
+  <script src="https://www.unpkg.com/alt1/dist/chatbox/index.js"></script>
+  <!-- <script src="https://www.unpkg.com/alt1/dist/fonts/aa_8px_mono.js"></script> -->
+  <!-- <script src="https://www.unpkg.com/alt1/dist/fonts/aa_10px_mono.js"></script> -->
+  <!-- <script src="https://www.unpkg.com/alt1/dist/fonts/aa_12px_mono.js"></script> -->
+  <!-- <script src="https://www.unpkg.com/alt1/dist/fonts/chatbox/10pt.js"></script> -->
+  <!-- <script src="https://www.unpkg.com/alt1/dist/fonts/chatbox/12pt.js"></script> -->
+  <!-- <script src="https://www.unpkg.com/alt1/dist/fonts/chatbox/14pt.js"></script> -->
+
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 12px;
+      font-family: monospace;
+    }
+
+    body.nis {
+      overflow-y: scroll;
+    }
+
+    .panel {
+      background: #111;
+      color: white;
+      border: 2px solid #444;
+      padding: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .panel .panel-content {
+      display: none;
+    }
+
+    .panel.open .panel-content {
+      display: block;
+    }
+
+    .panel-title {
+      position: relative;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-right: 20px;
+    }
+
+    .panel-toggle {
+      position: absolute;
+      inset: 0;
+      text-align: right;
+      font-weight: bold;
+      padding: 0 5px 0 0;
+
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .panel-content {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .panel-content label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel-content label input[type="range"] {
+      flex: 1;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid #333;
+      margin: 8px 0;
+    }
+
+    #stats label {
+      justify-content: flex-start;
+      align-items: start;
+    }
+    #stats.show-checkboxes input[type="checkbox"] {
+      display: inline-block;
+    }
+    #stats input[type="checkbox"] {
+      display: none;
+      height: 11px;
+      width: 11px;
+      margin: 1px;
+    }
+  </style>
+
+</head>
+
+<body class="nis">
+  <div id="stats" class="panel" data-panel-key="stats">
+    <div class="panel-title">
+      DG STATS
+      <button class="panel-toggle"></button>
+    </div>
+    <div class="panel-content" style="gap:2px">
+      <label><input type="checkbox" data-setting="statsOverlay_visited" disabled> Visited: <span id="statVisited">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_unknown" disabled> Unknown: <span id="statUnknown">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_locked" disabled> Locked: <span id="statLocked">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_inferred" disabled> Inferred: <span id="statInferred">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_unreachable" disabled> Unreachable: <span id="statUnreachable">-</span></label>
+      <hr>
+
+      <label><input type="checkbox" data-setting="statsOverlay_deadEnds" disabled> Dead Ends: <span id="statDeadEnds">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_branches" disabled> Branches: <span id="statBranches">-</span></label>
+      <hr>
+
+      <label><input type="checkbox" data-setting="statsOverlay_completion" disabled> Completion: <span id="statCompletion">-</span>%</label>
+      <label><input type="checkbox" data-setting="statsOverlay_time" disabled> Time: <span id="statTime">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_projected" disabled> Projected: <span id="statProjected">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_rpm" disabled> Rooms/Min: <span id="statRPM">-</span></label>
+    </div>
+  </div>
+
+  <div class="panel" data-panel-key="settings">
+    <div class="panel-title">
+      SETTINGS
+      <button class="panel-toggle"></button>
+    </div>
+    <div class="panel-content">
+      <label>Show Key Overlay <input type="checkbox" data-setting="showKeyOverlay" disabled></label>
+      <label>Show Crit Overlay <input type="checkbox" data-setting="showCritOverlay" disabled></label>
+      <label>Show Unreachable Overlay <input type="checkbox" data-setting="showUnreachableOverlay" disabled></label>
+      <label>Show Scan Overlay <input type="checkbox" data-setting="showScanOverlay" disabled></label>
+      <label>Highlight My Location <input type="checkbox" data-setting="highlightMyLocation" disabled></label>
+      <label>Highlight Corridors <input type="checkbox" data-setting="highlightCorridors" disabled></label>
+      <label>Highlight Gatestone1 <input type="checkbox" data-setting="highlightGatestone" disabled></label>
+      <label>Show Camera Angle <input type="checkbox" data-setting="showCameraAngle" disabled></label>
+
+      <label title="Toggle party list overlay (5s) when alt1 keybind is pressed, unless DG interface is already open">
+        Alt+1 toggles party list
+        <input type="checkbox" data-setting="alt1TogglePartyOverlay" disabled>
+      </label>
+      <label title="Toggle HUD visibility when alt1 keybind is pressed">
+        Alt+1 toggles HUD
+        <input type="checkbox" data-setting="alt1ToggleHUD" disabled>
+      </label>
+
+      <label>Key Door (Have Key) <input type="color" data-setting="colorKeyYes" disabled></label>
+      <label>Key Door (No Key) <input type="color" data-setting="colorKeyNo" disabled></label>
+      <label>Crit Path True <input type="color" data-setting="colorCritTrue" disabled></label>
+      <label>Crit Path False <input type="color" data-setting="colorCritFalse" disabled></label>
+
+      <hr>
+      <label>Show Stats Overlay <input type="checkbox" data-setting="showStatsOverlay" disabled></label>
+      <button id="setStatsPosition">Set stats overlay position</button>
+
+      <hr>
+      <label>Show Minimap HUD <input type="checkbox" data-setting="showMinimapHUD" disabled></label>
+      <label>HUD Room Scale <input type="range" data-setting="hudRoomScale" min="1" max="5" step="0.1" disabled></label>
+      <label>HUD Room Steps <input type="range" data-setting="hudRoomSteps" min="1" max="10" disabled></label>
+      <button id="setHUDPosition">Set minimap HUD position</button>
+
+      <hr>
+      <label>
+        Goal Time
+        <div style="display:flex; gap:4px;">
+          <input type="number" data-setting="goalMinutes" value="0" min="0" style="width:60px;" disabled>
+          <span>m</span>
+
+          <input type="number" data-setting="goalSeconds" value="0" min="0" max="59" style="width:60px;" disabled>
+          <span>s</span>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">FLOOR SIZE</div>
+    <div class="radio-group">
+      <label><input type="radio" name="floorSize" data-setting="floorSize" value="small" disabled>Small</label>
+      <label><input type="radio" name="floorSize" data-setting="floorSize" value="medium" disabled>Medium</label>
+      <label><input type="radio" name="floorSize" data-setting="floorSize" value="large" disabled>Large</label>
+    </div>
+  </div>
+
+  <div class="panel" data-panel-key="debug">
+    <div class="panel-title">
+      <span>DEBUG <input type="checkbox" data-setting="debug" disabled></span>
+      <span>Scan Time: <span id="statScanTime">-</span> ms</span>
+    </div>
+    <div class="panel-content">
+      <label>Full scans: <span id="debugScanDungeonMapFullCount">-</span></label>
+      <label>Full scan at: <span id="debugScanDungeonMapFullAt">-</span></label>
+      <label>Full scan time: <span id="debugScanDungeonMapFullTime">-</span></label>
+      <hr style="margin: 1px">
+      <label>Partial scans: <span id="debugScanDungeonMapPartialCount">-</span></label>
+      <label>Partial scan at: <span id="debugScanDungeonMapPartialAt">-</span></label>
+      <label>Partial scan time: <span id="debugScanDungeonMapPartialTime">-</span></label>
+      <hr style="margin: 1px">
+      <label>Player index: <span id="debugPlayerIndex">-</span></label>
+      <label>Party size: <span id="debugPartySize">-</span></label>
+      <label>Floor size: <span id="debugFloorSize">-</span></label>
+      <hr style="margin: 1px">
+      <label>In floor: <span id="debugInFloor">-</span></label>
+      <label>Grid size: <span id="debugGridSize">-</span></label>
+      <label>Known rooms: <span id="debugKnownRooms">-</span></label>
+      <label>Last start by: <span id="debugLastStartBy">-</span></label>
+      <hr>
+      <div id="debugChatStatus" style="white-space: pre-line;">Chatbox Searching...</div>
+    </div>
+  </div>
+
+  <script src="scripts/fonts.js"></script>
+  <script src="scripts/images.js"></script>
+  <script src="scripts/keys.js"></script>
+  <script src="scripts/keys_hl.js"></script>
+  <script src="scripts/rooms.js"></script>
+  <script src="scripts/puzzles.js"></script>
+  <script src="scripts/script.js"></script>
+</body>
+
+</html>
