@@ -1304,6 +1304,16 @@ function highlightCorridors() {
   timeouts.highlightCorridors = setTimeout(highlightCorridors, 4000);
 }
 
+function scanDungeonMapPartial() {
+  clearTimeout(timeouts.scanDungeonMap);
+  const start = performance.now();
+  // console.log('scanDungeonMapPartial');
+
+  if (!knownRooms || knownRooms.size === 0) {
+    timeouts.scanDungeonMap = setTimeout(scanDungeonMapFull, 1000);
+    return;
+  }
+
   overlay(OVERLAYS.rooms, () => {
     for (let roomId in indexedRooms) {
       const room = indexedRooms[roomId];
@@ -1347,7 +1357,7 @@ function highlightCorridors() {
   updateDebugOverlays();
 
   timeouts.scanDungeonMap = setTimeout(scanDungeonMapPartial, 50);
-
+}
 window.grid = grid;
 window.indexedRooms = indexedRooms;
 
