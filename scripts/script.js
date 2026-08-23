@@ -1216,13 +1216,86 @@ function highlightCorridors() {
 
   if (inFloor && grid && grid.length > 0) {
     overlay(OVERLAYS.corridors, () => {
+      const visitedEdges = new Set();
+      
+      // Define a palette of colors for different branches
+      const BRANCH_COLORS = [
+        0xff00ffff, // Cyan
+        0xffff0000, // Red
+        0xff00ff00, // Green
+        0xff0000ff, // Blue
+        0xffffff00, // Yellow
+        0xffff00ff, // Magenta
+        0xffff8800, // Orange
+        0xffffffff  // White
+      ];
+      let globalColorIndex = 0;
+
+      // Recursive function to traverse connected rooms and draw lines
+      function traverseBranch(room, colorIdx) {
+        const exits = [];
+        if (room.north) exits.push(room.north);
+        if (room.south) exits.push(room.south);
+        if (room.east) exits.push(room.east);
+        if (room.west) exits.push(room.west);
+
+        // Filter out paths we've already drawn
+        const unvisitedExits = exits.filter(exitRoom => {
+          const edge1 = `${room.id}_${exitRoom.id}`;
+          const edge2 = `${exitRoom.id}_${room.id}`;
+          return !visitedEdges.has(edge1) && !visitedEdges.has(edge2);
+        });
+
+        unvisitedExits.forEach((exitRoom, idx) => {
+          let nextColor = colorIdx;
+
+          // If a room has multiple unvisited exits, it's a branching point.
+          // The first path continues with the current color, and subsequent ones get a new color.
+          if (idx > 0) {
+            globalColorIndex = (globalColorIndex + 1) % BRANCH_COLORS.length;
+            nextColor = globalColorIndex;
+          }
+
+          // Calculate center coordinates of both rooms
+          const cx1 = room.x + Math.round(room.width / 2);
+          const cy1 = room.y + Math.round(room.height / 2);
+          const cx2 = exitRoom.x + Math.round(exitRoom.width / 2);
+          const cy2 = exitRoom.y + Math.round(exitRoom.height / 2);
+
+          // Draw a solid narrow line (width of 2) between the interconnected rooms
+          alt1.overLayLine(BRANCH_COLORS[nextColor], 2, cx1, cy1, cx2, cy2, 5000);
+
+          // Mark this connection as visited so we don't draw over it from the other side
+          visitedEdges.add(`${room.id}_${exitRoom.id}`);
+          
+          // Continue down this branch
+          traverseBranch(exitRoom, nextColor);
+        });
+      }
+
+      // Start the traversal for all visited rooms (to account for any disconnected mapping gaps)
       for (let row = 0; row < GRID_HEIGHT; row++) {
         for (let col = 0; col < GRID_WIDTH; col++) {
           const room = grid[row][col];
-          if (room.north) alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y - 4, 4, 4, 5000, 2)
-          if (room.south) alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y + room.height + 2, 4, 4, 5000, 2)
-          if (room.east)  alt1.overLayRect(0xffff00ff, room.x + room.width + 2, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
-          if (room.west)  alt1.overLayRect(0xffff00ff, room.x - 4, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
+          if (room.state === "visited") {
+            const exits = [];
+            if (room.north) exits.push(room.north);
+            if (room.south) exits.push(room.south);
+            if (room.east) exits.push(room.east);
+            if (room.west) exits.push(room.west);
+
+            const hasUnvisited = exits.some(exitRoom => {
+              const edge1 = `${room.id}_${exitRoom.id}`;
+              const edge2 = `${exitRoom.id}_${room.id}`;
+              return !visitedEdges.has(edge1) && !visitedEdges.has(edge2);
+            });
+
+            if (hasUnvisited) {
+               traverseBranch(room, globalColorIndex);
+               // Advance the color for entirely separate disconnected branches (if any exist)
+               globalColorIndex = (globalColorIndex + 1) % BRANCH_COLORS.length;
+            }
+          }
         }
       }
     });
@@ -1230,16 +1303,6 @@ function highlightCorridors() {
 
   timeouts.highlightCorridors = setTimeout(highlightCorridors, 4000);
 }
-
-function scanDungeonMapPartial() {
-  clearTimeout(timeouts.scanDungeonMap);
-  const start = performance.now();
-  // console.log('scanDungeonMapPartial');
-
-  if (!knownRooms || knownRooms.size === 0) {
-    timeouts.scanDungeonMap = setTimeout(scanDungeonMapFull, 1000);
-    return;
-  }
 
   overlay(OVERLAYS.rooms, () => {
     for (let roomId in indexedRooms) {
