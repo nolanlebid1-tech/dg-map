@@ -1347,7 +1347,7 @@ function highlightCorridors() {
   updateDebugOverlays();
 
   timeouts.scanDungeonMap = setTimeout(scanDungeonMapPartial, 50);
-}
+
 window.grid = grid;
 window.indexedRooms = indexedRooms;
 
