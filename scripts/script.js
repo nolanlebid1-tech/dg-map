@@ -820,13 +820,6 @@ function roomImageForHUD(room, angle) {
     }, { reset: false, resume: false });
   }
 
-
-  return {
-    cX: Math.round(posX + width / 2),
-    cY: Math.round(posY + height / 2),
-  }
-}
-
 function scanCompass() {
   clearTimeout(timeouts.scanCompass);
   if (!(SETTINGS.showCameraAngle || SETTINGS.showMinimapHUD)) {
