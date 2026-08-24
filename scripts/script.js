@@ -776,8 +776,12 @@ function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = n
 function roomImageForHUD(room, angle) {
   const roomImg = new ImageData(mapRoomSize, mapRoomSize);
   A1lib.decodeImageString(room.capture, roomImg, 0, 0, roomImg.width, roomImg.height);
-  let borderColor = 0xffc0c0c0;
-  let borderThickness = 1;
+  
+  // Change default border to null to remove the white/gray boxes
+  let borderColor = null;
+  let borderThickness = 0;
+  
+  // (Optional) This keeps the colored boxes around keys and critical rooms so you can still spot them
   if (room.state === "locked" && room.lockType === "key") {
     borderColor = room.color;
     borderThickness = room.keyHeld ? 3 : 2;
