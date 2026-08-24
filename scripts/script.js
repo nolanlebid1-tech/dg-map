@@ -1220,14 +1220,7 @@ function highlightCorridors() {
       
       // Define a palette of colors for different branches
       const BRANCH_COLORS = [
-        0xff00ffff, // Cyan
-        0xffff0000, // Red
-        0xff00ff00, // Green
-        0xff0000ff, // Blue
-        0xffffff00, // Yellow
         0xffff00ff, // Magenta
-        0xffff8800, // Orange
-        0xffffffff  // White
       ];
       let globalColorIndex = 0;
 
@@ -1262,8 +1255,8 @@ function highlightCorridors() {
           const cx2 = exitRoom.x + Math.round(exitRoom.width / 2);
           const cy2 = exitRoom.y + Math.round(exitRoom.height / 2);
 
-          // Draw a solid narrow line (width of 2) between the interconnected rooms
-          alt1.overLayLine(BRANCH_COLORS[nextColor], 2, cx1, cy1, cx2, cy2, 5000);
+          // Draw a solid narrow line (width of 1) between the interconnected rooms
+          alt1.overLayLine(BRANCH_COLORS[nextColor], 1, cx1, cy1, cx2, cy2, 5000);
 
           // Mark this connection as visited so we don't draw over it from the other side
           visitedEdges.add(`${room.id}_${exitRoom.id}`);
