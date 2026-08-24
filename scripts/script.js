@@ -796,30 +796,6 @@ function roomImageForHUD(room, angle) {
   }
 }
 
-  if (entryFrom) {
-    const [rowOffset, colOffset] = ADJACENCE_OFFSETS[entryFrom];
-
-    overlay(OVERLAYS.minimapHUDCorridors, () => {
-      let color = 0xffc0c0c0;
-      if (room.state === "locked" && room.lockType === "key") {
-        color = room.color;
-      }
-      else if (SETTINGS.showCritOverlay && room.crit != null) {
-        color = room.color;
-      }
-
-      alt1.overLayLine(
-        color,
-        7,
-        prevCx,
-        prevCy,
-        Math.round(posX + width / 2),
-        Math.round(posY + height / 2),
-        600
-      );
-    }, { reset: false, resume: false });
-  }
-
 //New function for rotating minimap
 function scanCompass() {
   clearTimeout(timeouts.scanCompass);
