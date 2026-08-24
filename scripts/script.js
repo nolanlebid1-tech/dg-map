@@ -777,11 +777,9 @@ function roomImageForHUD(room, angle) {
   const roomImg = new ImageData(mapRoomSize, mapRoomSize);
   A1lib.decodeImageString(room.capture, roomImg, 0, 0, roomImg.width, roomImg.height);
   
-  // Change default border to null to remove the white/gray boxes
   let borderColor = null;
   let borderThickness = 0;
   
-  // (Optional) This keeps the colored boxes around keys and critical rooms so you can still spot them
   if (room.state === "locked" && room.lockType === "key") {
     borderColor = room.color;
     borderThickness = room.keyHeld ? 3 : 2;
@@ -791,7 +789,8 @@ function roomImageForHUD(room, angle) {
     borderThickness = 2;
   }
 
-  const img = processImage(roomImg, { scale: SETTINGS.hudRoomScale, rotate: -angle, borderColor, borderThickness });
+  // Set scale directly to 1 so the tiles perfectly match the actual map size
+  const img = processImage(roomImg, { scale: 1, rotate: -angle, borderColor, borderThickness });
   const imgStr = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
   return {
     img: imgStr,
@@ -800,6 +799,7 @@ function roomImageForHUD(room, angle) {
   }
 }
 
+//New function for rotating minimap
 //New function for rotating minimap
 function scanCompass() {
   clearTimeout(timeouts.scanCompass);
@@ -827,8 +827,6 @@ function scanCompass() {
   let brightestRed, brightestRedX, brightestRedY;
   for (let x = 0; x < compassSize; x++) {
     for (let y = 0; y < compassSize; y++) {
-
-      // ignore pixels outside of compass circle
       const centerOffset = Math.sqrt((x - compassRadius)**2 + (y - compassRadius)**2);
       if (centerOffset > compassRadius) continue;
 
@@ -855,21 +853,8 @@ function scanCompass() {
   if (SETTINGS.debug) {
     console.log('Minimap viewing angle:', Math.round(cameraAngle), 'degrees, facing', direction);
     overlay(OVERLAYS.debugCompass, () => {
-      alt1.overLayRect(0xffff0000,
-        minimapX + compassOffset,
-        minimapY + compassOffset,
-        compassSize,
-        compassSize,
-        200,
-        2
-      );
-      alt1.overLayLine(0xffff00ff, 3,
-        minimapX + compassOffset + compassSize/2 - 1,
-        minimapY + compassOffset + compassSize/2,
-        minimapX + compassOffset + brightestRedX - 1,
-        minimapY + compassOffset + brightestRedY,
-        200
-      );
+      alt1.overLayRect(0xffff0000, minimapX + compassOffset, minimapY + compassOffset, compassSize, compassSize, 200, 2);
+      alt1.overLayLine(0xffff00ff, 3, minimapX + compassOffset + compassSize/2 - 1, minimapY + compassOffset + compassSize/2, minimapX + compassOffset + brightestRedX - 1, minimapY + compassOffset + brightestRedY, 200);
     });
 
     overlay(OVERLAYS.debugMinimap, () => {
@@ -882,7 +867,6 @@ function scanCompass() {
     if (SETTINGS.showCameraAngle) {
       const roomCenterX = playerRoom.x + Math.round(playerRoom.width / 2);
       const roomCenterY = playerRoom.y + Math.round(playerRoom.height / 2);
-
       const cameraWindowAngle = 60;
       const angle1 = (((cameraAngle - cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
       const angle2 = (((cameraAngle + cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
@@ -903,7 +887,6 @@ function scanCompass() {
       const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
       const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
 
-      // Calculate rotation multipliers to point the camera direction "Up"
       const angleRad = (-cameraAngle + 360) % 360 * Math.PI / 180;
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
@@ -911,39 +894,59 @@ function scanCompass() {
       const playerCx = playerRoom.x + playerRoom.width / 2;
       const playerCy = playerRoom.y + playerRoom.height / 2;
 
-      overlay(OVERLAYS.minimapHUD, () => {
-        alt1.overLayClearGroup(OVERLAYS.minimapHUDCorridors);
+      // Helper function to get exact rotated screen coordinates for any room center
+      const getRotatedCoords = (cx, cy) => {
+        const dx = (cx - playerCx); // Scale is exactly 1
+        const dy = (cy - playerCy);
+        return {
+          x: Math.round(centerX + (dx * cos - dy * sin)),
+          y: Math.round(centerY + (dx * sin + dy * cos))
+        };
+      };
 
-        // Render every captured room on the map, rotated around the player
+      // PASS 1: Draw the connecting corridors underneath
+      overlay(OVERLAYS.minimapHUDCorridors, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
-          
           if (!room.capture) continue;
 
-          // Get the rotated image for this specific room
+          const p1 = getRotatedCoords(room.x + room.width / 2, room.y + room.height / 2);
+
+          const drawCorridor = (adjRoom) => {
+            if (adjRoom && adjRoom.capture) {
+              const p2 = getRotatedCoords(adjRoom.x + adjRoom.width / 2, adjRoom.y + adjRoom.height / 2);
+              
+              let color = 0xffc0c0c0; // Default gray corridor
+              if (adjRoom.state === "locked" && adjRoom.lockType === "key") color = adjRoom.color;
+              else if (SETTINGS.showCritOverlay && adjRoom.crit != null) color = adjRoom.color;
+
+              // Draw a thick line to connect them
+              alt1.overLayLine(color, 6, p1.x, p1.y, p2.x, p2.y, 600);
+            }
+          };
+
+          // We only check East and South so we don't draw lines back over themselves twice
+          if (room.east) drawCorridor(room.east);
+          if (room.south) drawCorridor(room.south);
+        }
+      });
+
+      // PASS 2: Draw the room images on top
+      overlay(OVERLAYS.minimapHUD, () => {
+        for (const roomId in indexedRooms) {
+          const room = indexedRooms[roomId];
+          if (!room.capture) continue;
+
           const { img, width, height } = roomImageForHUD(room, cameraAngle);
+          const p1 = getRotatedCoords(room.x + room.width / 2, room.y + room.height / 2);
 
-          // Get the room's true center
-          const roomCx = room.x + room.width / 2;
-          const roomCy = room.y + room.height / 2;
-          
-          // Calculate distance from player, scaled by the HUD size setting
-          const dx = (roomCx - playerCx) * SETTINGS.hudRoomScale;
-          const dy = (roomCy - playerCy) * SETTINGS.hudRoomScale;
+          const posX = Math.round(p1.x - width / 2);
+          const posY = Math.round(p1.y - height / 2);
 
-          // Rotate the X and Y coordinates around the center point
-          const rotX = dx * cos - dy * sin;
-          const rotY = dx * sin + dy * cos;
-
-          // Apply to the screen coordinates
-          const posX = Math.round(centerX + rotX - width / 2);
-          const posY = Math.round(centerY + rotY - height / 2);
-
-          // Draw the room
-          alt1.overLayImage(posX, Math.round(posY), img, width, 600);
+          alt1.overLayImage(posX, posY, img, width, 600);
         }
 
-        // Draw a simple indicator for the player in the exact center of the HUD
+        // Draw Player indicator
         const playerColor = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
         alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
       });
@@ -953,10 +956,7 @@ function scanCompass() {
   const end = performance.now();
   timeouts.scanCompass = setTimeout(scanCompass, 50);
 
-  return {
-    cameraAngle,
-    direction,
-  }
+  return { cameraAngle, direction }
 }
 
 function findAnchor() {
