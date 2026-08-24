@@ -764,7 +764,27 @@ function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = n
     -imageData.width / 2,
     -imageData.height / 2
   );
+  
+const imageDataResult = ctx.getImageData(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 
+  // --- ADD THIS TRANSPARENCY LOOP ---
+  const data = imageDataResult.data;
+  const opacity = 0.6; // Change this between 0.1 (fully transparent) and 1.0 (fully solid)
+  for (let i = 3; i < data.length; i += 4) {
+    // Only modify pixels that aren't completely empty/black background
+    if (data[i] > 0) {
+      data[i] = Math.round(data[i] * opacity);
+    }
+  }
+  // ----------------------------------
+
+  return imageDataResult;
+  
   return ctx.getImageData(
     0,
     0,
@@ -916,7 +936,7 @@ function scanCompass() {
             if (adjRoom && adjRoom.capture) {
               const p2 = getRotatedCoords(adjRoom.x + adjRoom.width / 2, adjRoom.y + adjRoom.height / 2);
               
-              let color = 0xffc0c0c0; // Default gray corridor
+              let color = 0x99c0c0c0; // Default gray corridor
               if (adjRoom.state === "locked" && adjRoom.lockType === "key") color = adjRoom.color;
               else if (SETTINGS.showCritOverlay && adjRoom.crit != null) color = adjRoom.color;
 
