@@ -796,61 +796,6 @@ function roomImageForHUD(room, angle) {
   }
 }
 
-function renderRoomsForHUD(room, steps, entryFrom, p1, p2, offsetH, offsetV, angle, prevCx, prevCy) {
-  if (!room) return;
-
-  const { cX, cY } = renderRoomForHUD(room, p1, p2, offsetH, offsetV, angle, entryFrom, prevCx, prevCy, steps);
-
-  for (const dir in ADJACENCE_OFFSETS) {
-    if (dir === entryFrom) continue;
-
-    const adjRoom = room[dir];
-    if (!adjRoom?.capture) continue;
-
-    const [rowOffset, colOffset] = ADJACENCE_OFFSETS[dir];
-    if (steps > 1)
-      renderRoomsForHUD(adjRoom, steps - 1, CARDINAL_OPPOSITES[dir], p1, p2, offsetH + colOffset, offsetV + rowOffset, angle, cX, cY);
-  }
-}
-
-function renderRoomForHUD(room, p1, p2, offsetH, offsetV, angle, entryFrom, prevCx, prevCy) {
-  const { img, width, height } = roomImageForHUD(room, angle);
-
-  const gap = 10 * SETTINGS.hudRoomScale;
-  const angleRad = (-angle + 360) % 360 * Math.PI / 180;
-  const cos = Math.cos(angleRad);
-  const sin = Math.sin(angleRad);
-  const mx = (p1.x + p2.x) / 2;
-  const my = (p1.y + p2.y) / 2;
-
-  const tx = (
-    mx
-    + offsetH * (mapRoomSize * SETTINGS.hudRoomScale + gap) * cos
-    - offsetV * (mapRoomSize * SETTINGS.hudRoomScale + gap) * sin
-  );
-  const ty = (
-    my
-    + offsetH * (mapRoomSize * SETTINGS.hudRoomScale + gap) * sin
-    + offsetV * (mapRoomSize * SETTINGS.hudRoomScale + gap) * cos
-  );
-
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  const length = Math.hypot(dx, dy);
-  const offsetX = Math.round(-dy / length * -(gap + mapRoomSize * SETTINGS.hudRoomScale / 2));
-  const offsetY = Math.round(dx / length * -(gap + mapRoomSize * SETTINGS.hudRoomScale / 2));
-
-  const posX = Math.round(tx + offsetX - width / 2);
-  const posY = Math.round(ty + offsetY - height / 2);
-
-  alt1.overLayImage(
-    posX,
-    posY,
-    img,
-    width,
-    600
-  );
-
   if (entryFrom) {
     const [rowOffset, colOffset] = ADJACENCE_OFFSETS[entryFrom];
 
@@ -981,26 +926,55 @@ function scanCompass() {
       });
     }
 
-    if (SETTINGS.showMinimapHUD) {
-      const hudBoxSize = mapRoomSize * SETTINGS.hudRoomScale; // 150;
+   if (SETTINGS.showMinimapHUD) {
       const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
       const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
 
+      // Calculate rotation multipliers to point the camera direction "Up"
       const angleRad = (-cameraAngle + 360) % 360 * Math.PI / 180;
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
 
-      const corners = [
-        { x: -hudBoxSize/2, y: -hudBoxSize/2 },
-        { x:  hudBoxSize/2, y: -hudBoxSize/2 },
-        { x:  hudBoxSize/2, y:  hudBoxSize/2 },
-        { x: -hudBoxSize/2, y:  hudBoxSize/2 },
-      ].map(corner => {
-        return {
-          x: centerX + Math.round(corner.x * cos - corner.y * sin),
-          y: centerY + Math.round(corner.x * sin + corner.y * cos),
+      const playerCx = playerRoom.x + playerRoom.width / 2;
+      const playerCy = playerRoom.y + playerRoom.height / 2;
+
+      overlay(OVERLAYS.minimapHUD, () => {
+        alt1.overLayClearGroup(OVERLAYS.minimapHUDCorridors);
+
+        // Render every captured room on the map, rotated around the player
+        for (const roomId in indexedRooms) {
+          const room = indexedRooms[roomId];
+          
+          if (!room.capture) continue;
+
+          // Get the rotated image for this specific room
+          const { img, width, height } = roomImageForHUD(room, cameraAngle);
+
+          // Get the room's true center
+          const roomCx = room.x + room.width / 2;
+          const roomCy = room.y + room.height / 2;
+          
+          // Calculate distance from player, scaled by the HUD size setting
+          const dx = (roomCx - playerCx) * SETTINGS.hudRoomScale;
+          const dy = (roomCy - playerCy) * SETTINGS.hudRoomScale;
+
+          // Rotate the X and Y coordinates around the center point
+          const rotX = dx * cos - dy * sin;
+          const rotY = dx * sin + dy * cos;
+
+          // Apply to the screen coordinates
+          const posX = Math.round(centerX + rotX - width / 2);
+          const posY = Math.round(centerY + rotY - height / 2);
+
+          // Draw the room
+          alt1.overLayImage(posX, Math.round(posY), img, width, 600);
         }
+
+        // Draw a simple indicator for the player in the exact center of the HUD
+        const playerColor = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
+        alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
       });
+    }
 
       const color = playerRoom.color || 0xffa0663d;
       const colors = [0xffff0000, color, 0xffffffff, color];
