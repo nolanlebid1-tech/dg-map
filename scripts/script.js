@@ -892,7 +892,6 @@ function scanCompass() {
       );
     });
 
-
     overlay(OVERLAYS.debugMinimap, () => {
       alt1.overLayRect(appColor, minimapX, minimapY, minimapWidth, minimapHeight, 1000, 2);
     });
@@ -907,7 +906,7 @@ function scanCompass() {
       const cameraWindowAngle = 60;
       const angle1 = (((cameraAngle - cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
       const angle2 = (((cameraAngle + cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
-      const lineLength = 30;
+      const lineLength = 50;
 
       const x1 = roomCenterX + Math.round(Math.sin(angle1) * lineLength);
       const y1 = roomCenterY - Math.round(Math.cos(angle1) * lineLength);
@@ -915,12 +914,12 @@ function scanCompass() {
       const y2 = roomCenterY - Math.round(Math.cos(angle2) * lineLength);
 
       overlay(OVERLAYS.cameraAngle, () => {
-        alt1.overLayLine(0xff00ffff, 1, roomCenterX, roomCenterY, x1, y1, 600);
-        alt1.overLayLine(0xff00ffff, 1, roomCenterX, roomCenterY, x2, y2, 600);
+        alt1.overLayLine(0xff00ffff, 2, roomCenterX, roomCenterY, x1, y1, 600);
+        alt1.overLayLine(0xff00ffff, 2, roomCenterX, roomCenterY, x2, y2, 600);
       });
     }
 
-   if (SETTINGS.showMinimapHUD) {
+    if (SETTINGS.showMinimapHUD) {
       const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
       const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
 
@@ -969,48 +968,9 @@ function scanCompass() {
         alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
       });
     }
-
-      const color = playerRoom.color || 0xffa0663d;
-      const colors = [0xffff0000, color, 0xffffffff, color];
-      const dirs = ['north', 'east', 'south', 'west'];
-
-      overlay(OVERLAYS.minimapHUD, () => {
-        alt1.overLayClearGroup(OVERLAYS.minimapHUDCorridors);
-
-        for (let i = 0; i < 4; i++) {
-          const next = (i + 1) % 4;
-          alt1.overLayLine(
-            colors[i],
-            3,
-            corners[i].x,
-            corners[i].y,
-            corners[next].x,
-            corners[next].y,
-            600
-          );
-
-          renderRoomsForHUD(
-            playerRoom[dirs[i]],
-            SETTINGS.hudRoomSteps,
-            CARDINAL_OPPOSITES[dirs[i]],
-            corners[i],
-            corners[next],
-            0,
-            0,
-            cameraAngle,
-            Math.round((corners[i].x + corners[next].x) / 2),
-            Math.round((corners[i].y + corners[next].y) / 2),
-          );
-        }
-
-        alt1.overLayRefreshGroup(OVERLAYS.minimapHUDCorridors);
-
-      });
-    }
   }
 
   const end = performance.now();
-  // console.log('Projection overlay rendered in', Math.round(end - start), 'ms');
   timeouts.scanCompass = setTimeout(scanCompass, 50);
 
   return {
