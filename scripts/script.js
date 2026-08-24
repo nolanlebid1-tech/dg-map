@@ -820,6 +820,7 @@ function roomImageForHUD(room, angle) {
     }, { reset: false, resume: false });
   }
 
+//New function for rotating minimap
 function scanCompass() {
   clearTimeout(timeouts.scanCompass);
   if (!(SETTINGS.showCameraAngle || SETTINGS.showMinimapHUD)) {
