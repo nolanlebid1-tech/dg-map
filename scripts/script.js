@@ -1218,14 +1218,11 @@ function highlightCorridors() {
     overlay(OVERLAYS.corridors, () => {
       const visitedEdges = new Set();
       
-      // Define a palette of colors for different branches
-      const BRANCH_COLORS = [
-        0xffff00ff, // Magenta
-      ];
-      let globalColorIndex = 0;
+      // Define a single fixed color for all corridors
+      const LINE_COLOR = 0xffffffff; // White
 
       // Recursive function to traverse connected rooms and draw lines
-      function traverseBranch(room, colorIdx) {
+      function traverseBranch(room) {
         const exits = [];
         if (room.north) exits.push(room.north);
         if (room.south) exits.push(room.south);
@@ -1239,30 +1236,21 @@ function highlightCorridors() {
           return !visitedEdges.has(edge1) && !visitedEdges.has(edge2);
         });
 
-        unvisitedExits.forEach((exitRoom, idx) => {
-          let nextColor = colorIdx;
-
-          // If a room has multiple unvisited exits, it's a branching point.
-          // The first path continues with the current color, and subsequent ones get a new color.
-          if (idx > 0) {
-            globalColorIndex = (globalColorIndex + 1) % BRANCH_COLORS.length;
-            nextColor = globalColorIndex;
-          }
-
+        unvisitedExits.forEach(exitRoom => {
           // Calculate center coordinates of both rooms
           const cx1 = room.x + Math.round(room.width / 2);
           const cy1 = room.y + Math.round(room.height / 2);
           const cx2 = exitRoom.x + Math.round(exitRoom.width / 2);
           const cy2 = exitRoom.y + Math.round(exitRoom.height / 2);
 
-          // Draw a solid narrow line (width of 1) between the interconnected rooms
-          alt1.overLayLine(BRANCH_COLORS[nextColor], 1, cx1, cy1, cx2, cy2, 5000);
+          // Draw a solid narrow white line (width of 1) between the rooms
+          alt1.overLayLine(LINE_COLOR, 1, cx1, cy1, cx2, cy2, 5000);
 
           // Mark this connection as visited so we don't draw over it from the other side
           visitedEdges.add(`${room.id}_${exitRoom.id}`);
           
           // Continue down this branch
-          traverseBranch(exitRoom, nextColor);
+          traverseBranch(exitRoom);
         });
       }
 
@@ -1284,9 +1272,7 @@ function highlightCorridors() {
             });
 
             if (hasUnvisited) {
-               traverseBranch(room, globalColorIndex);
-               // Advance the color for entirely separate disconnected branches (if any exist)
-               globalColorIndex = (globalColorIndex + 1) % BRANCH_COLORS.length;
+               traverseBranch(room);
             }
           }
         }
