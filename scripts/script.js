@@ -7,7 +7,7 @@ const appColor = A1lib.mixColor(255, 199, 0);
 const timestampRegex = /\[\d{2}:\d{2}:\d{2}\]/g;
 
 
-// These will be used as default, and any saved settings will override them on load
+// These will be used as default, and any saved settings will override them on load. Please deploy now
 const SETTINGS = {
 
   showCameraAngle: true,
