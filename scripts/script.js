@@ -968,7 +968,7 @@ function scanCompass() {
       const cameraWindowAngle = 60;
       const angle1 = (((cameraAngle - cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
       const angle2 = (((cameraAngle + cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
-      const lineLength = 50;
+      const lineLength = 30;
 
       const x1 = roomCenterX + Math.round(Math.sin(angle1) * lineLength);
       const y1 = roomCenterY - Math.round(Math.cos(angle1) * lineLength);
@@ -976,8 +976,8 @@ function scanCompass() {
       const y2 = roomCenterY - Math.round(Math.cos(angle2) * lineLength);
 
       overlay(OVERLAYS.cameraAngle, () => {
-        alt1.overLayLine(0xff00ffff, 2, roomCenterX, roomCenterY, x1, y1, 600);
-        alt1.overLayLine(0xff00ffff, 2, roomCenterX, roomCenterY, x2, y2, 600);
+        alt1.overLayLine(0xff00ffff, 1, roomCenterX, roomCenterY, x1, y1, 600);
+        alt1.overLayLine(0xff00ffff, 1, roomCenterX, roomCenterY, x2, y2, 600);
       });
     }
 
