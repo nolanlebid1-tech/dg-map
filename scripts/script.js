@@ -774,7 +774,7 @@ const imageDataResult = ctx.getImageData(
 
   // --- ADD THIS TRANSPARENCY LOOP ---
   const data = imageDataResult.data;
-  const opacity = 0.6; // Change this between 0.1 (fully transparent) and 1.0 (fully solid)
+  const opacity = 0.8; // Change this between 0.1 (fully transparent) and 1.0 (fully solid)
   for (let i = 3; i < data.length; i += 4) {
     // Only modify pixels that aren't completely empty/black background
     if (data[i] > 0) {
