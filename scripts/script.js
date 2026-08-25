@@ -698,8 +698,7 @@ function applyBorder(imageData, color, thickness = 1) {
   return imageData;
 }
 
-
-function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = null, borderThickness = 1, } = {}) {
+function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = null, borderThickness = 1, circle = false } = {}) {
   const srcCanvas = document.createElement("canvas");
   srcCanvas.width = imageData.width;
   srcCanvas.height = imageData.height;
@@ -726,8 +725,10 @@ function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = n
 
   const rads = angle * Math.PI / 180;
 
-  const scaledWidth = imageData.width * scale;
-  const scaledHeight = imageData.height * scale;
+  // Add a tiny bit of extra padding (2 extra pixels) so the outer border pixels never get clipped
+  const padding = circle ? 4 : 0;
+  const scaledWidth = (imageData.width + padding) * scale;
+  const scaledHeight = (imageData.height + padding) * scale;
 
   const cos = Math.abs(Math.cos(rads));
   const sin = Math.abs(Math.sin(rads));
@@ -755,6 +756,13 @@ function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = n
     ctx.rotate(rads);
   }
 
+  // If it's a compass, draw a smooth circular clipping mask to keep the edges rounded
+  if (circle) {
+    ctx.beginPath();
+    ctx.arc(0, 0, (imageData.width / 2) * scale, 0, Math.PI * 2);
+    ctx.clip();
+  }
+
   if (scale !== 1) {
     ctx.scale(scale, scale);
   }
@@ -764,33 +772,23 @@ function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = n
     -imageData.width / 2,
     -imageData.height / 2
   );
-  
-const imageDataResult = ctx.getImageData(
+
+  const imageDataResult = ctx.getImageData(
     0,
     0,
     canvas.width,
     canvas.height
   );
 
-  // --- ADD THIS TRANSPARENCY LOOP ---
   const data = imageDataResult.data;
-  const opacity = 0.8; // Change this between 0.1 (fully transparent) and 1.0 (fully solid)
+  const opacity = 1.0; 
   for (let i = 3; i < data.length; i += 4) {
-    // Only modify pixels that aren't completely empty/black background
     if (data[i] > 0) {
       data[i] = Math.round(data[i] * opacity);
     }
   }
-  // ----------------------------------
 
   return imageDataResult;
-  
-  return ctx.getImageData(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
 }
 
 function roomImageForHUD(room, angle) {
