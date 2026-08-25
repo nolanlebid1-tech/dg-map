@@ -820,7 +820,6 @@ function roomImageForHUD(room, angle) {
 }
 
 //New function for rotating minimap
-//New function for rotating minimap
 function scanCompass() {
   clearTimeout(timeouts.scanCompass);
   if (!(SETTINGS.showCameraAngle || SETTINGS.showMinimapHUD)) {
@@ -911,13 +910,10 @@ function scanCompass() {
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
 
-      const playerCx = playerRoom.x + playerRoom.width / 2;
-      const playerCy = playerRoom.y + playerRoom.height / 2;
-
-      // Helper function to get exact rotated screen coordinates for any room center
-      const getRotatedCoords = (cx, cy) => {
-        const dx = (cx - playerCx); // Scale is exactly 1
-        const dy = (cy - playerCy);
+      // Helper function to calculate exact rotated screen coords based strictly on Grid Layout (removes gaps)
+      const getRotatedCoords = (room) => {
+        const dx = (room.col - playerRoom.col) * mapRoomSize;
+        const dy = (room.row - playerRoom.row) * mapRoomSize;
         return {
           x: Math.round(centerX + (dx * cos - dy * sin)),
           y: Math.round(centerY + (dx * sin + dy * cos))
@@ -930,24 +926,26 @@ function scanCompass() {
           const room = indexedRooms[roomId];
           if (!room.capture) continue;
 
-          const p1 = getRotatedCoords(room.x + room.width / 2, room.y + room.height / 2);
+          const p1 = getRotatedCoords(room);
 
           const drawCorridor = (adjRoom) => {
             if (adjRoom && adjRoom.capture) {
-              const p2 = getRotatedCoords(adjRoom.x + adjRoom.width / 2, adjRoom.y + adjRoom.height / 2);
+              const p2 = getRotatedCoords(adjRoom);
               
-              let color = 0x99c0c0c0; // Default gray corridor
+              let color = 0xffc0c0c0; // Default gray corridor
               if (adjRoom.state === "locked" && adjRoom.lockType === "key") color = adjRoom.color;
               else if (SETTINGS.showCritOverlay && adjRoom.crit != null) color = adjRoom.color;
 
-              // Draw a thick line to connect them
-              alt1.overLayLine(color, 6, p1.x, p1.y, p2.x, p2.y, 600);
+              // Draw a 2-pixel wide line to connect them
+              alt1.overLayLine(color, 2, p1.x, p1.y, p2.x, p2.y, 600);
             }
           };
 
-          // We only check East and South so we don't draw lines back over themselves twice
+          // Check all 4 directions to guarantee no missed connections
+          if (room.north) drawCorridor(room.north);
           if (room.east) drawCorridor(room.east);
           if (room.south) drawCorridor(room.south);
+          if (room.west) drawCorridor(room.west);
         }
       });
 
@@ -958,7 +956,7 @@ function scanCompass() {
           if (!room.capture) continue;
 
           const { img, width, height } = roomImageForHUD(room, cameraAngle);
-          const p1 = getRotatedCoords(room.x + room.width / 2, room.y + room.height / 2);
+          const p1 = getRotatedCoords(room);
 
           const posX = Math.round(p1.x - width / 2);
           const posY = Math.round(p1.y - height / 2);
@@ -974,7 +972,8 @@ function scanCompass() {
   }
 
   const end = performance.now();
-  timeouts.scanCompass = setTimeout(scanCompass, 50);
+  // Lowered from 50ms to 20ms for much smoother rotation
+  timeouts.scanCompass = setTimeout(scanCompass, 20);
 
   return { cameraAngle, direction }
 }
