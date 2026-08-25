@@ -973,24 +973,24 @@ function scanCompass() {
       });
     }
     
-    // PASS 3: Draw the Compass Overlay
-      if (SETTINGS.showCompassOverlay) {
-        const cx = SETTINGS.compassPosition?.x || Math.round(alt1.rsWidth / 2 - 150);
-        const cy = SETTINGS.compassPosition?.y || Math.round(alt1.rsHeight / 2 - 150);
-        
-        // Scale the compass image that was already captured at the top of the function
-        const scaledCompass = processImage(img, { scale: SETTINGS.compassScale || 1.5, rotate: 0 });
-        
-        overlay(OVERLAYS.compass, () => {
-          alt1.overLayImage(
-            Math.round(cx - scaledCompass.width / 2),
-            Math.round(cy - scaledCompass.height / 2),
-            A1lib.encodeImageString(scaledCompass),
-            scaledCompass.width,
-            600
-          );
-        });
-      }
+  // PASS 4: Draw the Compass Overlay
+  if (SETTINGS.showCompassOverlay) {
+    const cx = SETTINGS.compassPosition?.x || Math.round(alt1.rsWidth / 2 - 150);
+    const cy = SETTINGS.compassPosition?.y || Math.round(alt1.rsHeight / 2 - 150);
+    
+    // Pass circle: true to apply the clean border mask and prevent edge cutoff
+    const scaledCompass = processImage(img, { scale: SETTINGS.compassScale || 1.5, rotate: 0, circle: true });
+    
+    overlay(OVERLAYS.compass, () => {
+      alt1.overLayImage(
+        Math.round(cx - scaledCompass.width / 2),
+        Math.round(cy - scaledCompass.height / 2),
+        A1lib.encodeImageString(scaledCompass),
+        scaledCompass.width,
+        600
+      );
+    });
+  }
   }
 
   const end = performance.now();
