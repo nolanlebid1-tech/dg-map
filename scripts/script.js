@@ -1146,8 +1146,9 @@ function highlightCorridors() {
     overlay(OVERLAYS.corridors, () => {
       const visitedEdges = new Set();
       
-      // Define a single fixed color for all corridors
-      const LINE_COLOR = 0x3300ffff; // White
+      // We use Alt1's mixColor to guarantee the transparency passes through correctly
+      // (R: 0, G: 255, B: 255, Alpha: 51) -> 51 is exactly 20% opacity
+      const LINE_COLOR = A1lib.mixColor(0, 255, 255, 51); 
 
       // Recursive function to traverse connected rooms and draw lines
       function traverseBranch(room) {
@@ -1171,8 +1172,18 @@ function highlightCorridors() {
           const cx2 = exitRoom.x + Math.round(exitRoom.width / 2);
           const cy2 = exitRoom.y + Math.round(exitRoom.height / 2);
 
-          // Draw a solid narrow white line (width of 1) between the rooms
-          alt1.overLayLine(LINE_COLOR, 1, cx1, cy1, cx2, cy2, 5000);
+          // WORKAROUND: Use overLayRect for true transparency instead of overLayLine
+          if (cx1 === cx2) { 
+            // Vertical corridor (X coordinates match)
+            const y = Math.min(cy1, cy2);
+            const h = Math.abs(cy2 - cy1);
+            alt1.overLayRect(LINE_COLOR, cx1, y, 1, h, 5000, 1);
+          } else { 
+            // Horizontal corridor (Y coordinates match)
+            const x = Math.min(cx1, cx2);
+            const w = Math.abs(cx2 - cx1);
+            alt1.overLayRect(LINE_COLOR, x, cy1, w, 1, 5000, 1);
+          }
 
           // Mark this connection as visited so we don't draw over it from the other side
           visitedEdges.add(`${room.id}_${exitRoom.id}`);
@@ -1182,7 +1193,7 @@ function highlightCorridors() {
         });
       }
 
-      // Start the traversal for all visited rooms (to account for any disconnected mapping gaps)
+      // Start the traversal for all visited rooms
       for (let row = 0; row < GRID_HEIGHT; row++) {
         for (let col = 0; col < GRID_WIDTH; col++) {
           const room = grid[row][col];
