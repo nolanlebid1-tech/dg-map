@@ -1147,7 +1147,7 @@ function highlightCorridors() {
       const visitedEdges = new Set();
       
       // Define a single fixed color for all corridors
-      const LINE_COLOR = 0xffffffff; // White
+      const LINE_COLOR = 0x3300ffff; // White
 
       // Recursive function to traverse connected rooms and draw lines
       function traverseBranch(room) {
