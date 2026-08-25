@@ -995,7 +995,7 @@ if (SETTINGS.showMinimapHUD) {
 
   const end = performance.now();
   // Lowered from 50ms to 20ms for much smoother rotation
-  timeouts.scanCompass = setTimeout(scanCompass, 10);
+  timeouts.scanCompass = setTimeout(scanCompass, 50);
 
   return { cameraAngle, direction }
 }
