@@ -781,7 +781,7 @@ function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = n
   );
 
   const data = imageDataResult.data;
-  const opacity = 1.0; 
+  const opacity = 0.8; 
   for (let i = 3; i < data.length; i += 4) {
     if (data[i] > 0) {
       data[i] = Math.round(data[i] * opacity);
@@ -995,7 +995,7 @@ if (SETTINGS.showMinimapHUD) {
 
   const end = performance.now();
   // Lowered from 50ms to 20ms for much smoother rotation
-  timeouts.scanCompass = setTimeout(scanCompass, 20);
+  timeouts.scanCompass = setTimeout(scanCompass, 10);
 
   return { cameraAngle, direction }
 }
