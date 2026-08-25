@@ -902,51 +902,50 @@ function scanCompass() {
       });
     }
 
-  if (SETTINGS.showMinimapHUD) {
-      // Always anchor the HUD to a fixed point on your screen (either your custom position or the center of the window)
-      const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
-      const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
+ if (SETTINGS.showMinimapHUD) {
+      // Fixed top-left origin or center point for the entire map frame on your screen
+      const hudOriginX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth / 2 - 100);
+      const hudOriginY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight / 2 - 100);
 
       const angleRad = (-cameraAngle + 360) % 360 * Math.PI / 180;
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
 
-      // Use the player's room as the anchor point in the world grid
-      const playerCx = playerRoom.x + playerRoom.width / 2;
-      const playerCy = playerRoom.y + playerRoom.height / 2;
+      // Find the center bounds of the grid (using room [0,0] as the anchor map origin)
+      const originRoom = indexedRooms["0:0"] || playerRoom;
+      const originCx = originRoom.x + originRoom.width / 2;
+      const originCy = originRoom.y + originRoom.height / 2;
 
-      // Helper function to calculate exact rotated screen coords relative to the player's grid position
-      const getRotatedCoords = (room) => {
-        const dx = (room.col - playerRoom.col) * mapRoomSize;
-        const dy = (room.row - playerRoom.row) * mapRoomSize;
+      // Helper function to lock the entire dungeon layout in a stationary spot while rotating
+      const getStationaryMapCoords = (room) => {
+        const dx = (room.x + room.width / 2) - originCx;
+        const dy = (room.y + room.height / 2) - originCy;
         return {
-          x: Math.round(centerX + (dx * cos - dy * sin)),
-          y: Math.round(centerY + (dx * sin + dy * cos))
+          x: Math.round(hudOriginX + (dx * cos - dy * sin)),
+          y: Math.round(hudOriginY + (dx * sin + dy * cos))
         };
       };
 
-      // PASS 1: Draw the connecting corridors underneath (fixed to screen)
+      // PASS 1: Draw the stationary connecting corridors
       overlay(OVERLAYS.minimapHUDCorridors, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
           if (!room.capture) continue;
 
-          const p1 = getRotatedCoords(room);
+          const p1 = getStationaryMapCoords(room);
 
           const drawCorridor = (adjRoom) => {
             if (adjRoom && adjRoom.capture) {
-              const p2 = getRotatedCoords(adjRoom);
+              const p2 = getStationaryMapCoords(adjRoom);
               
-              let color = 0xffc0c0c0; // Default gray corridor
+              let color = 0xffc0c0c0;
               if (adjRoom.state === "locked" && adjRoom.lockType === "key") color = adjRoom.color;
               else if (SETTINGS.showCritOverlay && adjRoom.crit != null) color = adjRoom.color;
 
-              // Draw a 2-pixel wide line to connect them
               alt1.overLayLine(color, 2, p1.x, p1.y, p2.x, p2.y, 600);
             }
           };
 
-          // Check all 4 directions to guarantee no missed connections
           if (room.north) drawCorridor(room.north);
           if (room.east) drawCorridor(room.east);
           if (room.south) drawCorridor(room.south);
@@ -954,14 +953,14 @@ function scanCompass() {
         }
       });
 
-      // PASS 2: Draw the room images on top (fixed to screen)
+      // PASS 2: Draw the stationary room tiles
       overlay(OVERLAYS.minimapHUD, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
           if (!room.capture) continue;
 
           const { img, width, height } = roomImageForHUD(room, cameraAngle);
-          const p1 = getRotatedCoords(room);
+          const p1 = getStationaryMapCoords(room);
 
           const posX = Math.round(p1.x - width / 2);
           const posY = Math.round(p1.y - height / 2);
@@ -969,9 +968,10 @@ function scanCompass() {
           alt1.overLayImage(posX, posY, img, width, 600);
         }
 
-        // Draw Player indicator locked permanently to the center of your HUD widget
+        // PASS 3: Move the player indicator dynamically across the stationary map
+        const playerPos = getStationaryMapCoords(playerRoom);
         const playerColor = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
-        alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
+        alt1.overLayRect(playerColor, playerPos.x - 4, playerPos.y - 4, 8, 8, 600, 2);
       });
     }
     
