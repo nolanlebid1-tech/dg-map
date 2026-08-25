@@ -1148,7 +1148,7 @@ function highlightCorridors() {
       
       // We use Alt1's mixColor to guarantee the transparency passes through correctly
       // (R: 0, G: 255, B: 255, Alpha: 51) -> 51 is exactly 20% opacity
-      const LINE_COLOR = A1lib.mixColor(0, 255, 255, 51); 
+      const LINE_COLOR = A1lib.mixColor(0, 255, 255, 100); 
 
       // Recursive function to traverse connected rooms and draw lines
       function traverseBranch(room) {
