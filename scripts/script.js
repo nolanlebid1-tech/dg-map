@@ -39,9 +39,9 @@ const SETTINGS = {
 
   debug: false,
 
-
-  showStatsOverlay: true,
-  statsOverlayPosition: {},
+  showCompassOverlay: true,
+  compassPosition: {},
+  compassScale: 1.5,
 
   statsOverlay_visited: false,
   statsOverlay_unknown: false,
@@ -117,7 +117,7 @@ const OVERLAYS = {
   minimapHUD: 'minimapHUD',
   minimapHUDCorridors: 'minimapHUDCorridors',
   minimapKey: 'minimapKey',
-  stats: 'stats',
+  compass: 'compass',
   hudPosition: 'hudPosition',
   debug: 'debug',
   debugMap: 'debugMap',
@@ -969,6 +969,24 @@ function scanCompass() {
         alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
       });
     }
+    // PASS 3: Draw the Compass Overlay
+      if (SETTINGS.showCompassOverlay) {
+        const cx = SETTINGS.compassPosition?.x || Math.round(alt1.rsWidth / 2 - 150);
+        const cy = SETTINGS.compassPosition?.y || Math.round(alt1.rsHeight / 2 - 150);
+        
+        // Scale the compass image that was already captured at the top of the function
+        const scaledCompass = processImage(img, { scale: SETTINGS.compassScale || 1.5, rotate: 0 });
+        
+        overlay(OVERLAYS.compass, () => {
+          alt1.overLayImage(
+            Math.round(cx - scaledCompass.width / 2),
+            Math.round(cy - scaledCompass.height / 2),
+            A1lib.encodeImageString(scaledCompass),
+            scaledCompass.width,
+            600
+          );
+        });
+      }
   }
 
   const end = performance.now();
@@ -1994,11 +2012,6 @@ function updateStats() {
   document.getElementById("statProjected").innerText = projected;
   document.getElementById("statRPM").innerText = rpm;
 
-  if (SETTINGS.showStatsOverlay) {
-    overlay(OVERLAYS.stats, () => {
-      renderStatsOverlay();
-    });
-  }
 }
 
 function renderStatsOverlay({ x, y } = {}) {
@@ -2316,17 +2329,16 @@ document.getElementById("setHUDPosition").addEventListener("click", () => {
   }
 });
 
-document.getElementById("setStatsPosition").addEventListener("click", () => {
+document.getElementById("setCompassPosition").addEventListener("click", () => {
   if (!hudPositionStartAt) {
     waitForHUDPosition(
-      "statsOverlayPosition",
-      "Position your mouse where you want the stats to be, and press alt+1 to set position.",
+      "compassPosition",
+      "Position your mouse where you want the Compass to be, and press alt+1.",
       (x, y) => {
-        renderStatsOverlay({ x, y });
+        alt1.overLayRect(0xffffff00, x - 25, y - 25, 50, 50, 500, 2);
       }
     );
-  }
-  else {
+  } else {
     clearTimeout(timeouts.setHUDPosition);
     hudPositionStartAt = null;
     hudPositionTarget = null;
