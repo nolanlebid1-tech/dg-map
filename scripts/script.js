@@ -900,41 +900,46 @@ function scanCompass() {
       });
     }
 
- if (SETTINGS.showMinimapHUD) {
-      // Fixed top-left origin or center point for the entire map frame on your screen
-      const hudOriginX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth / 2 - 100);
-      const hudOriginY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight / 2 - 100);
+if (SETTINGS.showMinimapHUD) {
+      // Fixed center point on your screen where the player and axis of rotation will sit
+      const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth / 2);
+      const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight / 2);
 
       const angleRad = (-cameraAngle + 360) % 360 * Math.PI / 180;
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
 
-      // Find the center bounds of the grid (using room [0,0] as the anchor map origin)
-      const originRoom = indexedRooms["0:0"] || playerRoom;
-      const originCx = originRoom.x + originRoom.width / 2;
-      const originCy = originRoom.y + originRoom.height / 2;
+      // Player's world position center
+      const playerCx = playerRoom.x + playerRoom.width / 2;
+      const playerCy = playerRoom.y + playerRoom.height / 2;
 
-      // Helper function to lock the entire dungeon layout in a stationary spot while rotating
-      const getStationaryMapCoords = (room) => {
-        const dx = (room.x + room.width / 2) - originCx;
-        const dy = (room.y + room.height / 2) - originCy;
+      // Helper function: rotates any room position around the player's central axis
+      const getAxisRotatedCoords = (room) => {
+        const roomCx = room.x + room.width / 2;
+        const roomCy = room.y + room.height / 2;
+        
+        // Offset relative to the player
+        const dx = roomCx - playerCx;
+        const dy = roomCy - playerCy;
+
+        // Rotate around the player center point (centerX, centerY)
         return {
-          x: Math.round(hudOriginX + (dx * cos - dy * sin)),
-          y: Math.round(hudOriginY + (dx * sin + dy * cos))
+          x: Math.round(centerX + (dx * cos - dy * sin)),
+          y: Math.round(centerY + (dx * sin + dy * cos))
         };
       };
 
-      // PASS 1: Draw the stationary connecting corridors
+      // PASS 1: Draw the connected corridors as a unified rotated layer
       overlay(OVERLAYS.minimapHUDCorridors, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
           if (!room.capture) continue;
 
-          const p1 = getStationaryMapCoords(room);
+          const p1 = getAxisRotatedCoords(room);
 
           const drawCorridor = (adjRoom) => {
             if (adjRoom && adjRoom.capture) {
-              const p2 = getStationaryMapCoords(adjRoom);
+              const p2 = getAxisRotatedCoords(adjRoom);
               
               let color = 0xffc0c0c0;
               if (adjRoom.state === "locked" && adjRoom.lockType === "key") color = adjRoom.color;
@@ -951,14 +956,15 @@ function scanCompass() {
         }
       });
 
-      // PASS 2: Draw the stationary room tiles
+      // PASS 2: Draw the room tiles rotated around the central player axis
       overlay(OVERLAYS.minimapHUD, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
           if (!room.capture) continue;
 
+          // Note: we pass cameraAngle so the icons themselves stay upright or rotate with the map framework cleanly
           const { img, width, height } = roomImageForHUD(room, cameraAngle);
-          const p1 = getStationaryMapCoords(room);
+          const p1 = getAxisRotatedCoords(room);
 
           const posX = Math.round(p1.x - width / 2);
           const posY = Math.round(p1.y - height / 2);
@@ -966,10 +972,9 @@ function scanCompass() {
           alt1.overLayImage(posX, posY, img, width, 600);
         }
 
-        // PASS 3: Move the player indicator dynamically across the stationary map
-        const playerPos = getStationaryMapCoords(playerRoom);
+        // PASS 3: Player indicator stays locked dead-center on the axis of rotation
         const playerColor = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
-        alt1.overLayRect(playerColor, playerPos.x - 4, playerPos.y - 4, 8, 8, 600, 2);
+        alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
       });
     }
     
