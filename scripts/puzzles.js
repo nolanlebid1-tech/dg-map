@@ -112,7 +112,7 @@ const RIDDLES = [
   },
   {
       riddle: "Without me you cannot survive / would perish, but fill a room with me and you would surely die.",
-      search: "but fill a room with me and you would surely die",
+      search: "but fill a room",
       item: "Vial of water | Barrel [4, 3]",
       img: "https://runescape.wiki/images/Vial_of_water_%28o%29.png?a785d",
   },
