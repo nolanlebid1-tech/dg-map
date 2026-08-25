@@ -820,10 +820,9 @@ function roomImageForHUD(room, angle) {
 //New function for rotating minimap
 function scanCompass() {
   clearTimeout(timeouts.scanCompass);
-  if (!(SETTINGS.showCameraAngle || SETTINGS.showMinimapHUD)) {
+  if (!(SETTINGS.showCameraAngle || SETTINGS.showCompassOverlay)) {
     clearOverlay(OVERLAYS.cameraAngle);
-    clearOverlay(OVERLAYS.minimapHUD);
-    clearOverlay(OVERLAYS.minimapHUDCorridors);
+    clearOverlay(OVERLAYS.compass);
     return;
   }
 
@@ -899,86 +898,13 @@ function scanCompass() {
         alt1.overLayLine(0xff00ffff, 2, roomCenterX, roomCenterY, x2, y2, 600);
       });
     }
+  }
 
-if (SETTINGS.showMinimapHUD) {
-      // Always anchor the HUD to a fixed point on your screen (either your custom position or the center of the window)
-      const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
-      const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
-
-      const angleRad = (-cameraAngle + 360) % 360 * Math.PI / 180;
-      const cos = Math.cos(angleRad);
-      const sin = Math.sin(angleRad);
-
-      // Use the player's room as the anchor point in the world grid
-      const playerCx = playerRoom.x + playerRoom.width / 2;
-      const playerCy = playerRoom.y + playerRoom.height / 2;
-
-      // Helper function to calculate exact rotated screen coords relative to the player's grid position
-      const getRotatedCoords = (room) => {
-        const dx = (room.col - playerRoom.col) * mapRoomSize;
-        const dy = (room.row - playerRoom.row) * mapRoomSize;
-        return {
-          x: Math.round(centerX + (dx * cos - dy * sin)),
-          y: Math.round(centerY + (dx * sin + dy * cos))
-        };
-      };
-
-      // PASS 1: Draw the connecting corridors underneath (fixed to screen)
-      overlay(OVERLAYS.minimapHUDCorridors, () => {
-        for (const roomId in indexedRooms) {
-          const room = indexedRooms[roomId];
-          if (!room.capture) continue;
-
-          const p1 = getRotatedCoords(room);
-
-          const drawCorridor = (adjRoom) => {
-            if (adjRoom && adjRoom.capture) {
-              const p2 = getRotatedCoords(adjRoom);
-              
-              let color = 0xffc0c0c0; // Default gray corridor
-              if (adjRoom.state === "locked" && adjRoom.lockType === "key") color = adjRoom.color;
-              else if (SETTINGS.showCritOverlay && adjRoom.crit != null) color = adjRoom.color;
-
-              // Draw a 2-pixel wide line to connect them
-              alt1.overLayLine(color, 2, p1.x, p1.y, p2.x, p2.y, 600);
-            }
-          };
-
-          // Check all 4 directions to guarantee no missed connections
-          if (room.north) drawCorridor(room.north);
-          if (room.east) drawCorridor(room.east);
-          if (room.south) drawCorridor(room.south);
-          if (room.west) drawCorridor(room.west);
-        }
-      });
-
-      // PASS 2: Draw the room images on top (fixed to screen)
-      overlay(OVERLAYS.minimapHUD, () => {
-        for (const roomId in indexedRooms) {
-          const room = indexedRooms[roomId];
-          if (!room.capture) continue;
-
-          const { img, width, height } = roomImageForHUD(room, cameraAngle);
-          const p1 = getRotatedCoords(room);
-
-          const posX = Math.round(p1.x - width / 2);
-          const posY = Math.round(p1.y - height / 2);
-
-          alt1.overLayImage(posX, posY, img, width, 600);
-        }
-
-        // Draw Player indicator locked permanently to the center of your HUD widget
-        const playerColor = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
-        alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
-      });
-    }
-    
-  // PASS 4: Draw the Compass Overlay
+  // Draw the independent Compass Overlay
   if (SETTINGS.showCompassOverlay) {
     const cx = SETTINGS.compassPosition?.x || Math.round(alt1.rsWidth / 2 - 150);
     const cy = SETTINGS.compassPosition?.y || Math.round(alt1.rsHeight / 2 - 150);
     
-    // Pass circle: true to apply the clean border mask and prevent edge cutoff
     const scaledCompass = processImage(img, { scale: SETTINGS.compassScale || 1.5, rotate: 0, circle: true });
     
     overlay(OVERLAYS.compass, () => {
@@ -991,13 +917,11 @@ if (SETTINGS.showMinimapHUD) {
       );
     });
   }
-  }
 
   const end = performance.now();
-  // Lowered from 50ms to 20ms for much smoother rotation
-  timeouts.scanCompass = setTimeout(scanCompass, 50);
+  timeouts.scanCompass = setTimeout(scanCompass, 20);
 
-  return { cameraAngle, direction }
+  return { cameraAngle, direction };
 }
 
 function findAnchor() {
