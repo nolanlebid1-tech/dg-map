@@ -181,8 +181,12 @@
       <label>Crit Path False <input type="color" data-setting="colorCritFalse" disabled></label>
 
       <hr>
-      <label>Show Stats Overlay <input type="checkbox" data-setting="showStatsOverlay" disabled></label>
-      <button id="setStatsPosition">Set stats overlay position</button>
+     <div class="panel">
+  <div class="panel-title">Compass Overlay</div>
+  <label><input type="checkbox" data-setting="showCompassOverlay"> Show Compass</label>
+  <label>Scale: <input type="range" data-setting="compassScale" min="0.5" max="4" step="0.1" value="1.5"></label>
+  <button id="setCompassPosition">Set Position</button>
+</div>
 
       <hr>
       <label>Show Minimap HUD <input type="checkbox" data-setting="showMinimapHUD" disabled></label>
