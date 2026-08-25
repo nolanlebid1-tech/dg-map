@@ -901,54 +901,50 @@ function scanCompass() {
     }
 
 if (SETTINGS.showMinimapHUD) {
-      // Fixed center point on your screen where the player and axis of rotation will sit
-      const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth / 2);
-      const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight / 2);
+      // Always anchor the HUD to a fixed point on your screen (either your custom position or the center of the window)
+      const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
+      const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
 
       const angleRad = (-cameraAngle + 360) % 360 * Math.PI / 180;
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
 
-      // Player's world position center
+      // Use the player's room as the anchor point in the world grid
       const playerCx = playerRoom.x + playerRoom.width / 2;
       const playerCy = playerRoom.y + playerRoom.height / 2;
 
-      // Helper function: rotates any room position around the player's central axis
-      const getAxisRotatedCoords = (room) => {
-        const roomCx = room.x + room.width / 2;
-        const roomCy = room.y + room.height / 2;
-        
-        // Offset relative to the player
-        const dx = roomCx - playerCx;
-        const dy = roomCy - playerCy;
-
-        // Rotate around the player center point (centerX, centerY)
+      // Helper function to calculate exact rotated screen coords relative to the player's grid position
+      const getRotatedCoords = (room) => {
+        const dx = (room.col - playerRoom.col) * mapRoomSize;
+        const dy = (room.row - playerRoom.row) * mapRoomSize;
         return {
           x: Math.round(centerX + (dx * cos - dy * sin)),
           y: Math.round(centerY + (dx * sin + dy * cos))
         };
       };
 
-      // PASS 1: Draw the connected corridors as a unified rotated layer
+      // PASS 1: Draw the connecting corridors underneath (fixed to screen)
       overlay(OVERLAYS.minimapHUDCorridors, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
           if (!room.capture) continue;
 
-          const p1 = getAxisRotatedCoords(room);
+          const p1 = getRotatedCoords(room);
 
           const drawCorridor = (adjRoom) => {
             if (adjRoom && adjRoom.capture) {
-              const p2 = getAxisRotatedCoords(adjRoom);
+              const p2 = getRotatedCoords(adjRoom);
               
-              let color = 0xffc0c0c0;
+              let color = 0xffc0c0c0; // Default gray corridor
               if (adjRoom.state === "locked" && adjRoom.lockType === "key") color = adjRoom.color;
               else if (SETTINGS.showCritOverlay && adjRoom.crit != null) color = adjRoom.color;
 
+              // Draw a 2-pixel wide line to connect them
               alt1.overLayLine(color, 2, p1.x, p1.y, p2.x, p2.y, 600);
             }
           };
 
+          // Check all 4 directions to guarantee no missed connections
           if (room.north) drawCorridor(room.north);
           if (room.east) drawCorridor(room.east);
           if (room.south) drawCorridor(room.south);
@@ -956,15 +952,14 @@ if (SETTINGS.showMinimapHUD) {
         }
       });
 
-      // PASS 2: Draw the room tiles rotated around the central player axis
+      // PASS 2: Draw the room images on top (fixed to screen)
       overlay(OVERLAYS.minimapHUD, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
           if (!room.capture) continue;
 
-          // Note: we pass cameraAngle so the icons themselves stay upright or rotate with the map framework cleanly
           const { img, width, height } = roomImageForHUD(room, cameraAngle);
-          const p1 = getAxisRotatedCoords(room);
+          const p1 = getRotatedCoords(room);
 
           const posX = Math.round(p1.x - width / 2);
           const posY = Math.round(p1.y - height / 2);
@@ -972,7 +967,7 @@ if (SETTINGS.showMinimapHUD) {
           alt1.overLayImage(posX, posY, img, width, 600);
         }
 
-        // PASS 3: Player indicator stays locked dead-center on the axis of rotation
+        // Draw Player indicator locked permanently to the center of your HUD widget
         const playerColor = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
         alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
       });
