@@ -902,7 +902,8 @@ function scanCompass() {
       });
     }
 
-    if (SETTINGS.showMinimapHUD) {
+  if (SETTINGS.showMinimapHUD) {
+      // Always anchor the HUD to a fixed point on your screen (either your custom position or the center of the window)
       const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
       const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
 
@@ -910,7 +911,11 @@ function scanCompass() {
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
 
-      // Helper function to calculate exact rotated screen coords based strictly on Grid Layout (removes gaps)
+      // Use the player's room as the anchor point in the world grid
+      const playerCx = playerRoom.x + playerRoom.width / 2;
+      const playerCy = playerRoom.y + playerRoom.height / 2;
+
+      // Helper function to calculate exact rotated screen coords relative to the player's grid position
       const getRotatedCoords = (room) => {
         const dx = (room.col - playerRoom.col) * mapRoomSize;
         const dy = (room.row - playerRoom.row) * mapRoomSize;
@@ -920,7 +925,7 @@ function scanCompass() {
         };
       };
 
-      // PASS 1: Draw the connecting corridors underneath
+      // PASS 1: Draw the connecting corridors underneath (fixed to screen)
       overlay(OVERLAYS.minimapHUDCorridors, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
@@ -949,7 +954,7 @@ function scanCompass() {
         }
       });
 
-      // PASS 2: Draw the room images on top
+      // PASS 2: Draw the room images on top (fixed to screen)
       overlay(OVERLAYS.minimapHUD, () => {
         for (const roomId in indexedRooms) {
           const room = indexedRooms[roomId];
@@ -964,11 +969,12 @@ function scanCompass() {
           alt1.overLayImage(posX, posY, img, width, 600);
         }
 
-        // Draw Player indicator
+        // Draw Player indicator locked permanently to the center of your HUD widget
         const playerColor = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
         alt1.overLayRect(playerColor, centerX - 4, centerY - 4, 8, 8, 600, 2);
       });
     }
+    
     // PASS 3: Draw the Compass Overlay
       if (SETTINGS.showCompassOverlay) {
         const cx = SETTINGS.compassPosition?.x || Math.round(alt1.rsWidth / 2 - 150);
